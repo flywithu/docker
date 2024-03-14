@@ -1,0 +1,21 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Seoul
+# Install necessary packages
+RUN apt-get update && apt-get install -y \
+    curl \
+    zip \
+    unzip \
+    p7zip-full \
+    binwalk \
+    bash \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# Add a non-root user
+RUN useradd -m aosp
+USER aosp
+WORKDIR /home/aosp
+
+CMD ["/bin/bash"]
