@@ -190,7 +190,7 @@ index f7c07032..a82873aa 100644
                              }
                          } else {
 diff --git a/gnss/gnss_hw_listener.cpp b/gnss/gnss_hw_listener.cpp
-index cde8c570..8187430f 100644
+index cde8c570..cb396f55 100644
 --- a/gnss/gnss_hw_listener.cpp
 +++ b/gnss/gnss_hw_listener.cpp
 @@ -19,7 +19,8 @@
@@ -272,7 +272,7 @@ index cde8c570..8187430f 100644
 +        std::uniform_int_distribution<> dis(0, 1); 
 +
 +        double tempSpeed = speedKnots * 0.514444;
-+        tempSpeed = (tempSpeed > 98.0) ? 98.0 : tempSpeed; 
++        tempSpeed = (tempSpeed > 27.00) ? 27.00 : tempSpeed; 
 +        return tempSpeed + (dis(gen) == 0 ? -1 : 1); 
 +  
 +    }();
