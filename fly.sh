@@ -23,8 +23,10 @@ check_last_command_success "Failed to initialize the repo."
 python3 ~/bin/repo forall -c 'git reset --hard && git clean -xfd'
 check_last_command_success "Failed to repo reset."
 
-python3 ~/bin/repo sync -j 1 --fail-fast
-check_last_command_success "Failed to sync the repositories."
+if [ -z "$SKIP_SYNC" ] || [ "$SKIP_SYNC" = "0" ]; then
+    python3 ~/bin/repo sync -j 1 --fail-fast
+    check_last_command_success "Failed to sync the repositories."
+fi
 
 python3 ~/bin/repo forall -c git lfs pull
 #check_last_command_success "Failed to pull Git LFS files."
