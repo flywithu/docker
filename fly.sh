@@ -35,6 +35,7 @@ pushd docker
 docker pull --rebase
 popd
 
+./device/generic/goldfish/gnss/position.h device/generic/goldfish/gnss/position.h
 
 docker build -t flywithu:aosp11 -f docker/Dockerfile_emu86_extract docker
 check_last_command_success "Failed to build Docker."
@@ -45,3 +46,5 @@ check_last_command_success "Failed to execute extract."
 
 docker run --rm -it -v $(pwd):/home/aosp flywithu:aosp11 /bin/bash -c 'python3 docker/diff_to_patch.py docker/mydiff.patch'
 check_last_command_success "Failed to execute extract."
+
+cp docker/position.h 
