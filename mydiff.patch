@@ -190,17 +190,19 @@ index f7c07032..a82873aa 100644
                              }
                          } else {
 diff --git a/gnss/gnss_hw_listener.cpp b/gnss/gnss_hw_listener.cpp
-index cde8c570..50c58adb 100644
+index cde8c570..8187430f 100644
 --- a/gnss/gnss_hw_listener.cpp
 +++ b/gnss/gnss_hw_listener.cpp
-@@ -19,6 +19,7 @@
+@@ -19,7 +19,8 @@
  #include <utils/SystemClock.h>
  #include "gnss_hw_listener.h"
  #include "util.h"
+-
 +#include <math.h>
- 
++#include <random>
  namespace goldfish {
  namespace {
+ const char* testNmeaField(const char* i, const char* end,
 @@ -102,6 +103,39 @@ bool GnssHwListener::parse(const char* begin, const char* end,
      }
  }
@@ -250,10 +252,11 @@ index cde8c570..50c58adb 100644
  bool GnssHwListener::parseGPRMC(const char* begin, const char*,
                                  const ahg20::ElapsedRealtime& ts) {
      double speedKnots = 0;
-@@ -152,6 +188,15 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
+@@ -152,7 +188,25 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
  
      const double lat = convertDMMF(latdmm, latf, latfConsumed - latdmmConsumed) * sign(ns, 'N');
      const double lon = convertDMMF(londmm, lonf, lonfConsumed - londmmConsumed) * sign(ew, 'E');
+-    const double speed = speedKnots * 0.514444;
 +
 +
 +    double distance = calculateDistance(lat,lon,t_num1,t_num2);
@@ -263,10 +266,20 @@ index cde8c570..50c58adb 100644
 +
 +
 +
-     const double speed = speedKnots * 0.514444;
++    const double speed = [&]{
++       std::random_device rd;
++        std::mt19937 gen(rd()); 
++        std::uniform_int_distribution<> dis(0, 1); 
++
++        double tempSpeed = speedKnots * 0.514444;
++        tempSpeed = (tempSpeed > 98.0) ? 98.0 : tempSpeed; 
++        return tempSpeed + (dis(gen) == 0 ? -1 : 1); 
++  
++    }();
  
      ahg20::GnssLocation loc20;
-@@ -255,11 +300,11 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
+     loc20.elapsedRealtime = ts;
+@@ -255,11 +309,11 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
          info20->constellation = ahg20::GnssConstellationType::GPS;
          info10->svid = i + 3;
          info10->constellation = ahg10::GnssConstellationType::GPS;
@@ -280,7 +293,7 @@ index cde8c570..50c58adb 100644
      }
  
      m_sink->gnssSvStatus(svInfo);
-@@ -268,3 +313,4 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
+@@ -268,3 +322,4 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
  }
  
  }  // namespace goldfish
@@ -629,52 +642,3 @@ index 16f0e69..be2053a 100644
 +GAPPS_LOCAL_OVERRIDES_PACKAGES := LatinIME
  
  include $(BUILD_GAPPS_PREBUILT_APK)
-
-project vendor/opengapps/sources/arm/
-diff --git a/app/com.google.android.apps.photos/21/nodpi/42387410.apk b/app/com.google.android.apps.photos/21/nodpi/42387410.apk
-index 6086879..bf6d469 100755
---- a/app/com.google.android.apps.photos/21/nodpi/42387410.apk
-+++ b/app/com.google.android.apps.photos/21/nodpi/42387410.apk
-@@ -1,3 +1,3 @@
- version https://git-lfs.github.com/spec/v1
--oid sha256:3d6c40698f6b0e29c3cb1e88b22d9bb14bfe9034af1fa96a6377c4cf9dd73459
-+oid sha256:e0ebbfcae380cfbb424cd62a4e9570983999cc25e7294e568decd2957b02210a
- size 67575802
-
-project vendor/opengapps/sources/x86_64/
-diff --git a/app/com.google.android.apps.docs.editors.sheets/21/160/192920182.apk b/app/com.google.android.apps.docs.editors.sheets/21/160/192920182.apk
-index 6f2d2b7..4b3f4e2 100755
---- a/app/com.google.android.apps.docs.editors.sheets/21/160/192920182.apk
-+++ b/app/com.google.android.apps.docs.editors.sheets/21/160/192920182.apk
-@@ -1,3 +1,3 @@
- version https://git-lfs.github.com/spec/v1
--oid sha256:082ae5e3487914a6c38843fdd9707acf3c9c6ebf5d71237bf6c2197bcf2bcb45
-+oid sha256:19df624c27a79cb891e674a96e2b8ac66fd465a917cd420d4e197f5760233b06
- size 51736659
-diff --git a/app/com.google.android.apps.docs.editors.sheets/21/320/193320584.apk b/app/com.google.android.apps.docs.editors.sheets/21/320/193320584.apk
-index 580fcc1..e35f7b6 100755
---- a/app/com.google.android.apps.docs.editors.sheets/21/320/193320584.apk
-+++ b/app/com.google.android.apps.docs.editors.sheets/21/320/193320584.apk
-@@ -1,3 +1,3 @@
- version https://git-lfs.github.com/spec/v1
--oid sha256:23a7931ec70e78fe373efc490b7a51ebb780ffc0b8c923cea46586e2a4589ed1
-+oid sha256:5fdaef82b367f7d764c98cb5951761014a05ab19c2af27042a2ace9b4cceb22f
- size 52582522
-diff --git a/app/com.google.android.apps.docs.editors.slides/21/160/192720282.apk b/app/com.google.android.apps.docs.editors.slides/21/160/192720282.apk
-index 1e90bc6..aa48301 100755
---- a/app/com.google.android.apps.docs.editors.slides/21/160/192720282.apk
-+++ b/app/com.google.android.apps.docs.editors.slides/21/160/192720282.apk
-@@ -1,3 +1,3 @@
- version https://git-lfs.github.com/spec/v1
--oid sha256:12284ef8abf7ad9a3fca54b225466c463374302dde30497eb0e40d41f7bfd42e
-+oid sha256:445653fce9940d5bb90f40692d511c85a7f845466095189ece0ab3fc18746947
- size 54389537
-diff --git a/app/com.google.android.apps.docs.editors.slides/21/240/184620383.apk b/app/com.google.android.apps.docs.editors.slides/21/240/184620383.apk
-index 482a268..f3bce08 100755
---- a/app/com.google.android.apps.docs.editors.slides/21/240/184620383.apk
-+++ b/app/com.google.android.apps.docs.editors.slides/21/240/184620383.apk
-@@ -1,3 +1,3 @@
- version https://git-lfs.github.com/spec/v1
--oid sha256:20ef755f4d4cd876bee831a540be135f7580d5a8b55299599b0bcfae771446b8
-+oid sha256:eca77b18360401a6104b74ba5fce4c5636159be908bb12c9cfd12442ed7e9475
- size 51136515
