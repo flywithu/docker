@@ -26,7 +26,7 @@ index 6f2e80741..fa1bb2a9c 100644
 
 project device/generic/goldfish/
 diff --git a/gnss/gnss_hw_conn.cpp b/gnss/gnss_hw_conn.cpp
-index f7c07032..9ac37915 100644
+index f7c07032..a82873aa 100644
 --- a/gnss/gnss_hw_conn.cpp
 +++ b/gnss/gnss_hw_conn.cpp
 @@ -22,6 +22,8 @@
@@ -38,7 +38,7 @@ index f7c07032..9ac37915 100644
  
  namespace {
  constexpr char kCMD_QUIT = 'q';
-@@ -91,6 +93,25 @@ bool GnssHwConn::stop() {
+@@ -91,6 +93,28 @@ bool GnssHwConn::stop() {
      return ok() && sendWorkerThreadCommand(kCMD_STOP);
  }
  
@@ -61,10 +61,13 @@ index f7c07032..9ac37915 100644
 +}
 +
 +
++
++
++
  void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
      const unique_fd epollFd(epoll_create1(0));
      if (!epollFd.ok()) {
-@@ -104,18 +125,106 @@ void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
+@@ -104,18 +128,109 @@ void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
      GnssHwListener listener(sink);
      bool running = false;
  
@@ -79,7 +82,6 @@ index f7c07032..9ac37915 100644
 +
 +    struct GPS_X_Y *pGPS;
 +    pGPS = my_gps;
-+
 +
      while (true) {
          struct epoll_event events[2];
@@ -128,6 +130,8 @@ index f7c07032..9ac37915 100644
 +            }
 +
 +
++
++
 +            char  nmeaMessage[100];
 +
 +            time(&rawtime);
@@ -144,12 +148,14 @@ index f7c07032..9ac37915 100644
 +            ret = strlen(nmeaMessage);
 +            ALOGD("received %d bytes: %.*s", ret, ret, nmeaMessage);
 +            for (nn = 0; nn < ret; nn++)
-+                listener.consume(nmeaMessage[nn]);               
++                listener.consume(nmeaMessage[nn]);
 +///////////////////////////////////////
-+            snprintf(nmeaMessage,sizeof(nmeaMessage)," $GPRMC,%02d%02d%02d,A,%.05f,%c,%.05f,%c,016.2,360.0,%02d%02d%02d,011.3,E*", \
++            snprintf(nmeaMessage,sizeof(nmeaMessage)," $GPRMC,%02d%02d%02d,A,%.05f,%c,%.05f,%c,%d,360.0,%02d%02d%02d,011.3,E*", \
 +            timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec,
 +            num1,c1,num2,c2,
++            kTimeoutMs,
 +            (timeinfo->tm_year + 1900) % 100, timeinfo->tm_mon + 1,  timeinfo->tm_mday);
++
 +
 +            nmeachecksum  = calculate_nmea_checksum(nmeaMessage);
 +            // 체크섬을 메시지에 추가
@@ -174,7 +180,7 @@ index f7c07032..9ac37915 100644
          for (int i = 0; i < n; ++i) {
              const struct epoll_event* ev = &events[i];
              const int fd = ev->data.fd;
-@@ -133,7 +242,7 @@ void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
+@@ -133,7 +248,7 @@ void GnssHwConn::workerThread(int devFd, int threadsFd, const DataSink* sink) {
                          if (n > 0) {
                              if (running) {
                                  for (int i = 0; i < n; ++i) {
@@ -184,28 +190,83 @@ index f7c07032..9ac37915 100644
                              }
                          } else {
 diff --git a/gnss/gnss_hw_listener.cpp b/gnss/gnss_hw_listener.cpp
-index cde8c570..ae56a9f8 100644
+index cde8c570..50c58adb 100644
 --- a/gnss/gnss_hw_listener.cpp
 +++ b/gnss/gnss_hw_listener.cpp
-@@ -223,6 +223,8 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
-     char ew = 0;
-     char altitudeUnit = 0;
+@@ -19,6 +19,7 @@
+ #include <utils/SystemClock.h>
+ #include "gnss_hw_listener.h"
+ #include "util.h"
++#include <math.h>
  
-+    ALOGE("GPGGA GOGO");
-+
-     if (sscanf(begin, "%06d,%d.%n%d%n,%c,%d.%n%d%n,%c,%d,%d,%n",
-                &hhmmss,
-                &latdmm, &latdmmConsumed, &latf, &latfConsumed, &ns,
-@@ -233,6 +235,8 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
-         return false;
+ namespace goldfish {
+ namespace {
+@@ -102,6 +103,39 @@ bool GnssHwListener::parse(const char* begin, const char* end,
      }
+ }
  
-+    ALOGE("GPGGA GOGO 2");
++double toRadians(double degree) {
++    return degree * (M_PI / 180);
++}
 +
-     begin = skipAfter(begin + consumed, end, ',');  // skip HDOP
-     if (!begin) {
-         return false;
-@@ -255,11 +259,11 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
++double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
++    double R = 6371; // 지구 반지름(km)
++    double dLat = toRadians(abs(lat2 - lat1));
++    double dLon = toRadians(abs(lon2 - lon1));
++    lat1 = toRadians(lat1);
++    lat2 = toRadians(lat2);
++    
++    double a = sin(dLat/2) * sin(dLat/2) +
++               sin(dLon/2) * sin(dLon/2) * cos(lat1) * cos(lat2); 
++    double c = 2 * atan2(sqrt(a), sqrt(1-a)); 
++    double distance = R * c;
++    
++    return distance;
++}
++
++double calculateSpeedInKnots(double distance, double ms) {
++    // 밀리초(ms)를 시간(시간)으로 변환
++    double hours = ms / (1000.0 * 60 * 60);
++
++    // 시간당 킬로미터(km/h)로 속도 계산
++    double speedKmPerHour = distance / hours;
++
++    // km/h를 knots로 변환 (1노트 = 1시간당 1.852km)
++    double speedInKnots = speedKmPerHour / 1.852;
++
++    return speedInKnots;
++}
++
++
+ //        begin                                                          end
+ // $GPRMC,195206,A,1000.0000,N,10000.0000,E,173.8,231.8,010420,004.2,W*47
+ //          1    2    3      4    5       6     7     8      9    10 11 12
+@@ -117,6 +151,8 @@ bool GnssHwListener::parse(const char* begin, const char* end,
+ //     10  004.2      Variation
+ //     11  W          East/West
+ //     12  *70        checksum
++
++static double t_num1,t_num2;
+ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
+                                 const ahg20::ElapsedRealtime& ts) {
+     double speedKnots = 0;
+@@ -152,6 +188,15 @@ bool GnssHwListener::parseGPRMC(const char* begin, const char*,
+ 
+     const double lat = convertDMMF(latdmm, latf, latfConsumed - latdmmConsumed) * sign(ns, 'N');
+     const double lon = convertDMMF(londmm, lonf, lonfConsumed - londmmConsumed) * sign(ew, 'E');
++
++
++    double distance = calculateDistance(lat,lon,t_num1,t_num2);
++    speedKnots = calculateSpeedInKnots(distance,speedKnots);
++    t_num1 = lat;
++    t_num2 = lon;
++
++
++
+     const double speed = speedKnots * 0.514444;
+ 
+     ahg20::GnssLocation loc20;
+@@ -255,11 +300,11 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
          info20->constellation = ahg20::GnssConstellationType::GPS;
          info10->svid = i + 3;
          info10->constellation = ahg10::GnssConstellationType::GPS;
@@ -219,7 +280,7 @@ index cde8c570..ae56a9f8 100644
      }
  
      m_sink->gnssSvStatus(svInfo);
-@@ -268,3 +272,4 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
+@@ -268,3 +313,4 @@ bool GnssHwListener::parseGPGGA(const char* begin, const char* end,
  }
  
  }  // namespace goldfish
@@ -568,3 +629,52 @@ index 16f0e69..be2053a 100644
 +GAPPS_LOCAL_OVERRIDES_PACKAGES := LatinIME
  
  include $(BUILD_GAPPS_PREBUILT_APK)
+
+project vendor/opengapps/sources/arm/
+diff --git a/app/com.google.android.apps.photos/21/nodpi/42387410.apk b/app/com.google.android.apps.photos/21/nodpi/42387410.apk
+index 6086879..bf6d469 100755
+--- a/app/com.google.android.apps.photos/21/nodpi/42387410.apk
++++ b/app/com.google.android.apps.photos/21/nodpi/42387410.apk
+@@ -1,3 +1,3 @@
+ version https://git-lfs.github.com/spec/v1
+-oid sha256:3d6c40698f6b0e29c3cb1e88b22d9bb14bfe9034af1fa96a6377c4cf9dd73459
++oid sha256:e0ebbfcae380cfbb424cd62a4e9570983999cc25e7294e568decd2957b02210a
+ size 67575802
+
+project vendor/opengapps/sources/x86_64/
+diff --git a/app/com.google.android.apps.docs.editors.sheets/21/160/192920182.apk b/app/com.google.android.apps.docs.editors.sheets/21/160/192920182.apk
+index 6f2d2b7..4b3f4e2 100755
+--- a/app/com.google.android.apps.docs.editors.sheets/21/160/192920182.apk
++++ b/app/com.google.android.apps.docs.editors.sheets/21/160/192920182.apk
+@@ -1,3 +1,3 @@
+ version https://git-lfs.github.com/spec/v1
+-oid sha256:082ae5e3487914a6c38843fdd9707acf3c9c6ebf5d71237bf6c2197bcf2bcb45
++oid sha256:19df624c27a79cb891e674a96e2b8ac66fd465a917cd420d4e197f5760233b06
+ size 51736659
+diff --git a/app/com.google.android.apps.docs.editors.sheets/21/320/193320584.apk b/app/com.google.android.apps.docs.editors.sheets/21/320/193320584.apk
+index 580fcc1..e35f7b6 100755
+--- a/app/com.google.android.apps.docs.editors.sheets/21/320/193320584.apk
++++ b/app/com.google.android.apps.docs.editors.sheets/21/320/193320584.apk
+@@ -1,3 +1,3 @@
+ version https://git-lfs.github.com/spec/v1
+-oid sha256:23a7931ec70e78fe373efc490b7a51ebb780ffc0b8c923cea46586e2a4589ed1
++oid sha256:5fdaef82b367f7d764c98cb5951761014a05ab19c2af27042a2ace9b4cceb22f
+ size 52582522
+diff --git a/app/com.google.android.apps.docs.editors.slides/21/160/192720282.apk b/app/com.google.android.apps.docs.editors.slides/21/160/192720282.apk
+index 1e90bc6..aa48301 100755
+--- a/app/com.google.android.apps.docs.editors.slides/21/160/192720282.apk
++++ b/app/com.google.android.apps.docs.editors.slides/21/160/192720282.apk
+@@ -1,3 +1,3 @@
+ version https://git-lfs.github.com/spec/v1
+-oid sha256:12284ef8abf7ad9a3fca54b225466c463374302dde30497eb0e40d41f7bfd42e
++oid sha256:445653fce9940d5bb90f40692d511c85a7f845466095189ece0ab3fc18746947
+ size 54389537
+diff --git a/app/com.google.android.apps.docs.editors.slides/21/240/184620383.apk b/app/com.google.android.apps.docs.editors.slides/21/240/184620383.apk
+index 482a268..f3bce08 100755
+--- a/app/com.google.android.apps.docs.editors.slides/21/240/184620383.apk
++++ b/app/com.google.android.apps.docs.editors.slides/21/240/184620383.apk
+@@ -1,3 +1,3 @@
+ version https://git-lfs.github.com/spec/v1
+-oid sha256:20ef755f4d4cd876bee831a540be135f7580d5a8b55299599b0bcfae771446b8
++oid sha256:eca77b18360401a6104b74ba5fce4c5636159be908bb12c9cfd12442ed7e9475
+ size 51136515

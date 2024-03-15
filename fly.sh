@@ -27,7 +27,12 @@ python3 ~/bin/repo sync -j 1 --fail-fast
 check_last_command_success "Failed to sync the repositories."
 
 python3 ~/bin/repo forall -c git lfs pull
-check_last_command_success "Failed to pull Git LFS files."
+#check_last_command_success "Failed to pull Git LFS files."
+
+pushd docker
+docker pull --rebase
+popd
+
 
 docker build -t flywithu:aosp11 -f docker/Dockerfile_emu86_extract docker
 check_last_command_success "Failed to build Docker."
