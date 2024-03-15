@@ -31,11 +31,12 @@ def split_and_apply_diff(repo_diff_file_path):
             diff_file_path = project_path / f"{project_path.name}.patch"
             with open(diff_file_path, 'w') as diff_file:
                 diff_file.write(diff_content)
-            
+                diff_file.write('\n')
+
             # Apply the patch
             
             print(f"Applying {diff_file_path} patch to: {project_path}")
-            subprocess.run(["git", "apply", str(Path(diff_file_path).name)], cwd=project_path)
+            subprocess.run(["git", "apply","--whitespace=nowarn", str(Path(diff_file_path).name)], cwd=project_path)
         else:
             print(f"Project directory {project_path} does not exist.")
     print("Patch application process completed.")
