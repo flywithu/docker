@@ -44,6 +44,9 @@ docker run --rm -it -v $(pwd):/home/aosp flywithu:aosp11 /bin/bash -c 'source ve
 check_last_command_success "Failed to execute extract."
 
 
+docker run --rm -it -v $(pwd):/home/aosp flywithu:aosp11 /bin/bash -c 'python3 docker/carplaystore.sh'
+check_last_command_success "car playstore ."
+
 docker run --rm -it -v $(pwd):/home/aosp flywithu:aosp11 /bin/bash -c 'python3 docker/diff_to_patch.py docker/mydiff.patch'
 check_last_command_success "Failed to execute extract."
 
