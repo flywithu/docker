@@ -47,4 +47,4 @@ check_last_command_success "Failed to execute extract."
 docker run --rm -it -v $(pwd):/home/aosp flywithu:aosp11 /bin/bash -c 'python3 docker/diff_to_patch.py docker/mydiff.patch'
 check_last_command_success "Failed to execute extract."
 
-cp docker/position.h 
+cp -Rf docker/position.h ./device/generic/goldfish/gnss/position.h
