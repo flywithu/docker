@@ -310,10 +310,10 @@ index f720a058..8418a1be 100644
 +ro.dalvik.vm.isa.arm64 u:object_r:qemu_prop:s0
 +ro.enable.native.bridge.exe u:object_r:qemu_prop:s0
 diff --git a/x86_64-vendor.mk b/x86_64-vendor.mk
-index 6dfadc0e..e7e1b315 100644
+index 6dfadc0e..cde954c6 100644
 --- a/x86_64-vendor.mk
 +++ b/x86_64-vendor.mk
-@@ -57,3 +57,300 @@ PRODUCT_COPY_FILES += \
+@@ -57,3 +57,301 @@ PRODUCT_COPY_FILES += \
      device/generic/goldfish/fstab.ranchu.initrd:$(TARGET_COPY_OUT_VENDOR_RAMDISK)/fstab.ranchu \
      device/generic/goldfish/fstab.ranchu:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.ranchu
  endif
@@ -605,8 +605,9 @@ index 6dfadc0e..e7e1b315 100644
 +
 +GAPPS_EXCLUDED_PACKAGES += \
 +SetupWizard \
-+Phonesky \
-+GoogleTTS \
++
++
++# GoogleTTS \
 +
 +
 +$(call inherit-product, vendor/google/emu-x86/target/native_bridge_arm_on_x86.mk)
