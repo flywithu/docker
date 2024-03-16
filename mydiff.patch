@@ -649,3 +649,18 @@ index 407a407..f03c0b1 100644
  TVGAPPS_PRODUCT_PACKAGES += \
      ConfigUpdater \
      GoogleBackupTransport \
+diff --git a/CleanSpec.mk b/CleanSpec.mk
+new file mode 100644
+index 0000000..50b8df1
+--- /dev/null
++++ b/CleanSpec.mk
+@@ -0,0 +1,2 @@
++$(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/app/*)
++$(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/priv-app/*)
+diff --git a/modules/Android.mk b/modules/Android.mk
+new file mode 100644
+index 0000000..03d69cf
+--- /dev/null
++++ b/modules/Android.mk
+@@ -0,0 +1 @@
++include $(call all-named-subdir-makefiles,$(GAPPS_PRODUCT_PACKAGES))
