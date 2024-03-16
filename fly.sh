@@ -26,6 +26,9 @@ check_last_command_success "Failed to repo reset."
 if [ -z "$SKIP_SYNC" ] || [ "$SKIP_SYNC" = "0" ]; then
     python3 ~/bin/repo sync -j 1 --fail-fast
     check_last_command_success "Failed to sync the repositories."
+
+else
+    echo "SKIP SYNC"
 fi
 
 python3 ~/bin/repo forall -c git lfs pull
@@ -44,7 +47,7 @@ docker run --rm -it -v $(pwd):/home/aosp flywithu:aosp11 /bin/bash -c 'source ve
 check_last_command_success "Failed to execute extract."
 
 
-docker run --rm -it -v $(pwd):/home/aosp flywithu:aosp11 /bin/bash -c 'python3 docker/carplaystore.sh'
+docker run --rm -it -v $(pwd):/home/aosp flywithu:aosp11 /bin/bash -c 'source docker/carplaystore.sh'
 check_last_command_success "car playstore ."
 
 docker run --rm -it -v $(pwd):/home/aosp flywithu:aosp11 /bin/bash -c 'python3 docker/diff_to_patch.py docker/mydiff.patch'
